@@ -81,7 +81,14 @@ EVENT_STRS_1 = [
 
 EVENT_STRS_2 = [
     "what is today's date",
-    "give me today's date"
+    "give me today's date",
+    "what is the date today",
+]
+
+NAME_STRS_1 = [
+    "what is your name",
+    "what's your name",
+    "give me your name",
 ]
 
 def speak(text):
@@ -164,41 +171,40 @@ service = authenticate_google()
 text = get_audio().lower()
 print("You said: " + text)
 
+#RETURN 'HELLO'
 for greeting in GREETING_STRS_1:
     if greeting in text:
         speak(random.choice(GREETING_STRS_1_ANSWERS))
 
+#RETURN 'HOW ARE YOU'
 for greeting in GREETING_STRS_2:
     if greeting in text:
         speak(random.choice(GREETING_STRS_2_ANSWERS))
 
+#RETURN ALL EVENTS (SUMMARY + DATE)
 for phrase in EVENT_STRS_1:
     if phrase in text:
         events = get_events(service)
+        speak("You have")
         for event in events:
             start = event['start'].get('dateTime', event['start'].get('date'))
             speak(event['summary'] + "On" + date_to_string(start[5:10]))
 
+#RETURN DATE TODAY
 for phrase in EVENT_STRS_2:
     if phrase in text:
         date = datetime.date.today()
         today = f"{date}"
         speak(date_to_string_year(today))
 
+#RETURN NAME
+for phrase in NAME_STRS_1:
+    if phrase in text:
+        speak("My name is Neo.")
 
-<<<<<<< HEAD
-
-# TODO 
-# keyboard input while loop
-# create/delete event (on a date or not)
-# what day is august 24
-# install weather api for voice assistant 
-# install google maps api for voice assistant , nearby places, traffic 
-# install some sort of messaging 
-=======
->>>>>>> c527b408286f8523e90d5b61a32abed9fb96629a
 
 # TODO 
+# implement one return speak() instead of multiple, especially for loops
 # keyboard input while loop
 # what day is august 24
 # install weather api for voice assistant 
