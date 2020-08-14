@@ -7,22 +7,21 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import os
 import time
-import playsound
-import pyaudio
 import speech_recognition as sr
-from gtts import gTTS
+import pyttsx3
+
+#playsound gtts
 
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"]
 MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
-DAY_EXTENSIONS = ["rd","th","st"]
+DAY_EXTENSIONS = ["rd","th","st", "nd"]
 
 
 def speak(text):
-    tts = gTTS(text=text, lang="en")
-    filename = "voice.mp3"
-    tts.save(filename)
-    playsound.playsound(filename)
+    engine = pyttsx3.init()
+    engine.say(text)
+    engine.runAndWait()
 
 def get_audio():
     r = sr.Recognizer()
@@ -129,8 +128,10 @@ def get_date(text):
 
 
 #TEST COMMANDS
-service = authenticate_google()
-get_events(2, service)
+#service = authenticate_google()
+#get_events(2, service)
 
-text = get_audio().lower()
-print(get_date(text))
+#text = get_audio().lower()
+#print(get_date(text))
+
+#speak("hello dane how are you")
