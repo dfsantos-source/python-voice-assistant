@@ -9,14 +9,80 @@ import os
 import time
 import speech_recognition as sr
 import pyttsx3
-
+import pytz
+import random
+from random import choice
 #playsound gtts
 
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
-DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday"]
-MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
-DAY_EXTENSIONS = ["rd","th","st", "nd"]
+DAY_PRONOUNCE = [
+    "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "nineth", "tenth", "eleventh", "twelveth", "thirtheenth", 
+    "fourteenth", "fifteenth", "sixteenth", "seventeenth", "eighteenth", 
+    "nineteenth", "twentyth", "twentyfirst", "twentysecond", "twentythird",
+    "twentyfourth", "twentyfifth", "twentysixth", "twentyseventh", "twentyeigth", "twentynineth", "thirtyth", "thirtyfirst"
+]
+DAYS_OF_WEEK = [
+    "monday", 
+    "tuesday", 
+    "wednesday", 
+    "thursday", 
+    "friday", 
+    "saturday", 
+    "sunday",
+]
+MONTHS = [
+    "january", 
+    "february", 
+    "march", 
+    "april", 
+    "may", 
+    "june",
+    "july", 
+    "august", 
+    "september",
+    "october", 
+    "november", 
+    "december"
+]
+GREETING_STRS_1 = [
+    "hello",
+    "hi",
+    "hey",
+    "what's up",
+    "what is up",
+    "what's good",
+    "what is good",
+]
+GREETING_STRS_1_ANSWERS = [
+    "hello",
+    "hi",
+    "hey",
+    "what's up",
+    "what is up",
+    "what's good",
+    "what is good",
+]
 
+GREETING_STRS_2 = [
+    "how are you",
+    "how are things",
+]   
+GREETING_STRS_2_ANSWERS = [
+    "just getting by",
+    "i'm alright",
+    "i'm okay",
+]
+
+EVENT_STRS_1 = [
+    "what are my upcoming events",
+    "when are my upcoming events",
+    "show my upcoming events",
+]
+
+EVENT_STRS_2 = [
+    "what is today's date",
+    "give me today's date"
+]
 
 def speak(text):
     engine = pyttsx3.init()
@@ -24,18 +90,16 @@ def speak(text):
     engine.runAndWait()
 
 def get_audio():
+    print("Begin speaking..")
     r = sr.Recognizer()
     with sr.Microphone() as source:
         audio = r.listen(source=source,timeout=5,phrase_time_limit=5)
-        said = ""
-
         try:
-            said = r.recognize_google(audio)
-            print(said)
+            print(r.recognize_google(audio))
         except LookupError:
             print("Could not understand")
      
-    return said
+    return r.recognize_google(audio)
 
 
 def authenticate_google():
@@ -63,13 +127,13 @@ def authenticate_google():
     return service
 
     
-def get_events(n, service):  
-    # 'n' is the amount of events to get, 'service' was returned from authenticate_google()
+def get_events(service):  
     # Call the Calendar API
     now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-    print(f'Getting the upcoming {n} events')
+    print('Getting the upcoming 10 events')
+    print("-------------")
     events_result = service.events().list(calendarId='primary', timeMin=now,
-                                        maxResults=n, singleEvents=True,
+                                        maxResults=10, singleEvents=True,
                                         orderBy='startTime').execute()
     events = events_result.get('items', [])
 
@@ -77,61 +141,59 @@ def get_events(n, service):
         print('No upcoming events found.')
     for event in events:
         start = event['start'].get('dateTime', event['start'].get('date'))
-        print(start, event['summary'])
-
-def get_date(text):
-    text = text.lower()
-    today = datetime.date.today() 
-
-    if text.count("today") > 0: #if 'today' is mentioned in the text
-        return today
-
-    day = -1
-    day_of_week = -1
-    month = -1
-    year = today.year
-
-    for word in text.split(): #splits text word by word, looks for keywords 'month' 'day' 'day_of_week'
-        if word in MONTHS:
-            month = MONTHS.index(word) + 1  
-        elif word in DAYS:
-            day_of_week = DAYS.index(word) 
-        elif word.isdigit():
-            day = int(word)
-        else:
-            for ext in DAY_EXTENSIONS:
-                found = word.find(ext)
-                if found > 0:
-                    try:
-                        day = int(word[:found])
-                    except:
-                        pass
+        print(start[5:10])
+        print(event['summary'])
+        print("----------")
     
-    if month != -1 and month < today.month: #if the month we're talking about exists AND is in the past (before today's month)
-        year = year + 1
+    return events
 
-    if day != -1 and month == -1 and day < today.day: #if the day AND month we're talking about exists AND day is in the next month
-        month = month + 1 
+def date_to_string(date): #format ex: 08-21
+    day = DAY_PRONOUNCE[int(date[3:5])-1] #int 
+    int_month = int(date[0:2]) #int
+    return MONTHS[int_month] + " " + day
 
-    if month == -1 and day == -1 and day_of_week != -1: #we only have a 'day_of_week' to build the date
-        current_day_of_week = today.weekday()
-        dif = day_of_week - current_day_of_week 
-
-        if dif < 0: 
-            dif += 7
-            if text.count("next") >= 1:
-                dif += 7
-        
-        return today + datetime.timedelta(dif)
-    
-    return datetime.date(month=month, day=day, year=year)
+def date_to_string_year(date): #format ex: 2000-08-21
+    day = DAY_PRONOUNCE[int(date[8:10])-1] #int 
+    int_month = int(date[5:7])-1 #int
+    return f"{MONTHS[int_month]} {day} {date[0:5]}"
 
 
-#TEST COMMANDS
-#service = authenticate_google()
-#get_events(2, service)
+#----------------------------------------------------------------------------------------------------------------
 
-#text = get_audio().lower()
-#print(get_date(text))
+service = authenticate_google()
+text = get_audio().lower()
+print("You said: " + text)
 
-#speak("hello dane how are you")
+for greeting in GREETING_STRS_1:
+    if greeting in text:
+        speak(random.choice(GREETING_STRS_1_ANSWERS))
+
+for greeting in GREETING_STRS_2:
+    if greeting in text:
+        speak(random.choice(GREETING_STRS_2_ANSWERS))
+
+for phrase in EVENT_STRS_1:
+    if phrase in text:
+        events = get_events(service)
+        for event in events:
+            start = event['start'].get('dateTime', event['start'].get('date'))
+            speak(event['summary'] + "On" + date_to_string(start[5:10]))
+
+for phrase in EVENT_STRS_2:
+    if phrase in text:
+        date = datetime.date.today()
+        today = f"{date}"
+        speak(date_to_string_year(today))
+
+
+
+# TODO 
+# keyboard input while loop
+# what day is august 24
+# install weather api for voice assistant 
+# install google maps api for voice assistant , nearby places, traffic 
+# install some sort of messaging 
+# 
+
+
+
