@@ -186,6 +186,7 @@ for phrase in EVENT_STRS_2:
         speak(date_to_string_year(today))
 
 
+<<<<<<< HEAD
 
 # TODO 
 # keyboard input while loop
@@ -194,7 +195,16 @@ for phrase in EVENT_STRS_2:
 # install weather api for voice assistant 
 # install google maps api for voice assistant , nearby places, traffic 
 # install some sort of messaging 
+=======
+>>>>>>> c527b408286f8523e90d5b61a32abed9fb96629a
 
+# TODO 
+# keyboard input while loop
+# what day is august 24
+# install weather api for voice assistant 
+# install google maps api for voice assistant , nearby places, traffic 
+# install some sort of messaging 
+# 
 
 
 
