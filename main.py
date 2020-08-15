@@ -82,6 +82,7 @@ EVENT_STRS_1 = [
 EVENT_STRS_2 = [
     "what is today's date",
     "give me today's date",
+    "what's today's date",
     "what is the date today",
 ]
 
@@ -103,8 +104,8 @@ def get_audio():
         audio = r.listen(source=source,timeout=5,phrase_time_limit=5)
         try:
             print(r.recognize_google(audio))
-        except LookupError:
-            print("Could not understand")
+        except Exception:
+            print("Exception was found")
      
     return r.recognize_google(audio)
 
@@ -162,7 +163,7 @@ def date_to_string(date): #format ex: 08-21
 def date_to_string_year(date): #format ex: 2000-08-21
     day = DAY_PRONOUNCE[int(date[8:10])-1] #int 
     int_month = int(date[5:7])-1 #int
-    return f"{MONTHS[int_month]} {day} {date[0:5]}"
+    return f"{MONTHS[int_month]} {day} {date[0:4]}"
 
 
 #----------------------------------------------------------------------------------------------------------------
@@ -170,41 +171,44 @@ def date_to_string_year(date): #format ex: 2000-08-21
 service = authenticate_google()
 text = get_audio().lower()
 print("You said: " + text)
+output = ""
 
 #RETURN 'HELLO'
 for greeting in GREETING_STRS_1:
     if greeting in text:
-        speak(random.choice(GREETING_STRS_1_ANSWERS))
+        output += '' + random.choice(GREETING_STRS_1_ANSWERS) + '.'
 
 #RETURN 'HOW ARE YOU'
 for greeting in GREETING_STRS_2:
     if greeting in text:
-        speak(random.choice(GREETING_STRS_2_ANSWERS))
+        output += ' ' + random.choice(GREETING_STRS_2_ANSWERS) + '.'
 
 #RETURN ALL EVENTS (SUMMARY + DATE)
 for phrase in EVENT_STRS_1:
     if phrase in text:
         events = get_events(service)
-        speak("You have")
+        output += ' ' + "you have"
         for event in events:
             start = event['start'].get('dateTime', event['start'].get('date'))
-            speak(event['summary'] + "On" + date_to_string(start[5:10]))
+            output += ' ' + event['summary'] + ' ' + "on" + ' ' + date_to_string(start[5:10]) + ','
 
 #RETURN DATE TODAY
 for phrase in EVENT_STRS_2:
     if phrase in text:
         date = datetime.date.today()
         today = f"{date}"
-        speak(date_to_string_year(today))
+        output += ' ' + "today's date is, " + date_to_string_year(today) + ','
 
 #RETURN NAME
 for phrase in NAME_STRS_1:
     if phrase in text:
-        speak("My name is Neo.")
+        output += ' ' + "My name is Neo."
 
+
+print(output)
+speak(output)
 
 # TODO 
-# implement one return speak() instead of multiple, especially for loops
 # keyboard input while loop
 # what day is august 24
 # install weather api for voice assistant 
