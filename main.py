@@ -21,6 +21,15 @@ DAY_PRONOUNCE = [
     "nineteenth", "twentyth", "twentyfirst", "twentysecond", "twentythird",
     "twentyfourth", "twentyfifth", "twentysixth", "twentyseventh", "twentyeigth", "twentynineth", "thirtyth", "thirtyfirst"
 ]
+DAY_ABREVS = [
+    'mon',
+    'tue',
+    'wed',
+    'thu',
+    'fri',
+    'sat',
+    'sun',
+]
 DAYS_OF_WEEK = [
     "monday", 
     "tuesday", 
@@ -48,19 +57,8 @@ GREETING_STRS_1 = [
     "hello",
     "hi",
     "hey",
-    "what's up",
-    "what is up",
+    "greetings",
     "what's good",
-    "what is good",
-]
-GREETING_STRS_1_ANSWERS = [
-    "hello",
-    "hi",
-    "hey",
-    "what's up",
-    "what is up",
-    "what's good",
-    "what is good",
 ]
 
 GREETING_STRS_2 = [
@@ -74,16 +72,29 @@ GREETING_STRS_2_ANSWERS = [
 ]
 
 EVENT_STRS_1 = [
+    "upcoming events",
     "what are my upcoming events",
     "when are my upcoming events",
     "show my upcoming events",
 ]
 
-EVENT_STRS_2 = [
+DATE_STRS_1 = [
     "what is today's date",
     "give me today's date",
     "what's today's date",
     "what is the date today",
+]
+
+EVENT_STRS_3 = [
+    "what is on",
+    "anything on",
+    "plans on",
+    "events on",
+    "event on",
+    "event tomorrow",
+    "events tomorrow",
+    "events today",
+    "event today"
 ]
 
 NAME_STRS_1 = [
@@ -105,7 +116,7 @@ def get_audio():
         try:
             print(r.recognize_google(audio))
         except Exception:
-            print("Exception was found")
+            print("EXCEPTION FOUND")
      
     return r.recognize_google(audio)
 
@@ -146,19 +157,61 @@ def get_events(service):
     events = events_result.get('items', [])
 
     if not events:
-        print('No upcoming events found.')
-    for event in events:
-        start = event['start'].get('dateTime', event['start'].get('date'))
-        print(start[5:10])
-        print(event['summary'])
-        print("----------")
+        return None
+    else:
+        return events
+
+# Gets an event, given a date
+def get_event(date, service):
+    # Call the Calendar API
+    start = datetime.datetime.combine(date, datetime.datetime.min.time())
+    start = start.astimezone(pytz.UTC).isoformat()
+    end = datetime.datetime.combine(date, datetime.datetime.max.time())
+    end = end.astimezone(pytz.UTC).isoformat()  
     
-    return events
+    events_result = service.events().list(calendarId='primary', timeMin=start, timeMax=end,
+                                        singleEvents=True,
+                                        orderBy='startTime').execute()
+    events = events_result.get('items', [])
+    if not events:
+        return None
+    else:
+        return events
+
+#AT THE SAME TIME WE MUST KEEP IN MIND THE YEAR
+#WE ARE TALKING ABOUT OTHER MONTHS
+#august 21
+#WE ARE TALKING ABOUT THIS MONTH
+#next mon,tues,etc.
+#on the [21st, 22nd etc.]
+def get_date(text):
+    today = datetime.date.today()
+    day = -1
+    month = -1
+    year = today.year
+
+    if text.count("tomorrow") > 0:
+        return today + datetime.timedelta(1)
+
+    if text.count("today") > 0:
+        return today    
+    
+
+    for word in text.split():
+        if word in MONTHS:
+            month = MONTHS.index(word) + 1
+        elif word.isdigit():
+            day = int(word)
+
+    if month < today.month:
+        year += 1
+
+    return datetime.date(month=month, day=day, year=year)
 
 def date_to_string(date): #format ex: 08-21
     day = DAY_PRONOUNCE[int(date[3:5])-1] #int 
     int_month = int(date[0:2]) #int
-    return MONTHS[int_month] + " " + day
+    return MONTHS[int_month-1] + " " + day
 
 def date_to_string_year(date): #format ex: 2000-08-21
     day = DAY_PRONOUNCE[int(date[8:10])-1] #int 
@@ -168,48 +221,85 @@ def date_to_string_year(date): #format ex: 2000-08-21
 
 #----------------------------------------------------------------------------------------------------------------
 
+# WAIT FOR USER INPUT
+# input("Press Enter then begin speaking..")
+
+# INITIALIZE VARIABLES
 service = authenticate_google()
 text = get_audio().lower()
-print("You said: " + text)
+text_tokens = text.split()
+print('You said: ' + text)
 output = ""
+phraseFound = False
 
-#RETURN 'HELLO'
+# RETURN 'HELLO'
 for greeting in GREETING_STRS_1:
-    if greeting in text:
-        output += '' + random.choice(GREETING_STRS_1_ANSWERS) + '.'
+    if greeting in text_tokens:
+        phraseFound = True
+        output += ' ' + random.choice(GREETING_STRS_1) + '.'
+        break
 
-#RETURN 'HOW ARE YOU'
+# RETURN 'HOW ARE YOU'
 for greeting in GREETING_STRS_2:
     if greeting in text:
+        phraseFound = True
         output += ' ' + random.choice(GREETING_STRS_2_ANSWERS) + '.'
+        break
 
-#RETURN ALL EVENTS (SUMMARY + DATE)
+# RETURN ALL EVENTS (SUMMARY + DATE)
 for phrase in EVENT_STRS_1:
     if phrase in text:
+        phraseFound = True
         events = get_events(service)
         output += ' ' + "you have"
         for event in events:
             start = event['start'].get('dateTime', event['start'].get('date'))
             output += ' ' + event['summary'] + ' ' + "on" + ' ' + date_to_string(start[5:10]) + ','
+        break
 
-#RETURN DATE TODAY
-for phrase in EVENT_STRS_2:
+# RETURN DATE TODAY (month, day, year)
+for phrase in DATE_STRS_1:
     if phrase in text:
+        phraseFound = True
         date = datetime.date.today()
         today = f"{date}"
-        output += ' ' + "today's date is, " + date_to_string_year(today) + ','
+        output += '' + "today's date is, " + date_to_string_year(today) + ','
+        break
 
-#RETURN NAME
+# RETURN NAME
 for phrase in NAME_STRS_1:
     if phrase in text:
+        phraseFound = True
         output += ' ' + "My name is Neo."
+        break
+
+# RETURN EVENT, GIVEN A DATE
+# must be said in the form ex: 'on august 21'
+for phrase in EVENT_STRS_3:
+    if phrase in text:
+        phraseFound = True
+        dateInstance = get_date(text)
+        events = get_event(dateInstance, service)
+        if events is not None:
+            for event in events:
+                start = event['start'].get('dateTime', event['start'].get('date'))
+                output += ' ' + event['summary'] + ' ' + "on" + ' ' + date_to_string(start[5:10]) + ','
+            break
+        else:
+            output += " No events on that date."
+            break
 
 
-print(output)
-speak(output)
+# SPEAK OUTPUT
+if phraseFound == True:
+    print("Output String: " + output)
+    speak(output)
+else:
+    print("No phrase found.")
+
 
 # TODO 
-# keyboard input while loop
+# implement st, nd, rd, th, and 'tomorrow' for date 
 # what day is august 24
 # install weather api for voice assistant 
 # install google maps api for voice assistant , nearby places, traffic 
