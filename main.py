@@ -237,7 +237,9 @@ def get_weather(day_value):
     lat = myloc.lat
     lon = myloc.lng
     part = 'hourly, minutely, current'
-    api_key = "b06fe66f5475080e660b6feb372b1629"
+    api_file = open("/Users/danesantos/Desktop/api_keys/weather_key.txt" , "r")
+    api_key = api_file.read()
+    api_file.close()
     base_url = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&units=imperial&exclude={part}&appid={api_key}"
     response = requests.get(base_url)
     rough_data = response.json()
