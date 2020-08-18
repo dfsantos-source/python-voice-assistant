@@ -12,7 +12,9 @@ import pyttsx3
 import pytz
 import random
 from random import choice
-#playsound gtts
+import requests
+import json
+import geocoder
 
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 DAY_PRONOUNCE = [
@@ -60,7 +62,6 @@ GREETING_STRS_1 = [
     "greetings",
     "what's good",
 ]
-
 GREETING_STRS_2 = [
     "how are you",
     "how are things",
@@ -70,21 +71,24 @@ GREETING_STRS_2_ANSWERS = [
     "i'm alright",
     "i'm okay",
 ]
-
 EVENT_STRS_1 = [
     "upcoming events",
     "what are my upcoming events",
     "when are my upcoming events",
     "show my upcoming events",
 ]
-
 DATE_STRS_1 = [
     "what is today's date",
     "give me today's date",
+    "what's the date today",
+    "what is the date today",
     "what's today's date",
     "what is the date today",
 ]
-
+DATE_STRS_2 = [
+    "what day of the week",
+    "what day is",
+]
 EVENT_STRS_3 = [
     "what is on",
     "anything on",
@@ -96,11 +100,17 @@ EVENT_STRS_3 = [
     "events today",
     "event today"
 ]
-
 NAME_STRS_1 = [
     "what is your name",
     "what's your name",
     "give me your name",
+]
+WEATHER_STRS_1 = [
+    "weather today",
+    "weather tomorrow",
+    "weather forecast tomorrow",
+    "weather forecast today",
+    "weather on",
 ]
 
 def speak(text):
@@ -145,7 +155,7 @@ def authenticate_google():
 
     return service
 
-    
+# RETURNS NEXT 10 UPCOMING EVENTS FROM CALENDAR API
 def get_events(service):  
     # Call the Calendar API
     now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
@@ -161,7 +171,7 @@ def get_events(service):
     else:
         return events
 
-# Gets an event, given a date
+# RETURNS EVENT FROM A SPECIFIED DATE
 def get_event(date, service):
     # Call the Calendar API
     start = datetime.datetime.combine(date, datetime.datetime.min.time())
@@ -178,12 +188,8 @@ def get_event(date, service):
     else:
         return events
 
-#AT THE SAME TIME WE MUST KEEP IN MIND THE YEAR
-#WE ARE TALKING ABOUT OTHER MONTHS
-#august 21
-#WE ARE TALKING ABOUT THIS MONTH
-#next mon,tues,etc.
-#on the [21st, 22nd etc.]
+
+# RETURNS DATETIME OBJECT FROM VOICE (TEXT)
 def get_date(text):
     today = datetime.date.today()
     day = -1
@@ -200,23 +206,58 @@ def get_date(text):
     for word in text.split():
         if word in MONTHS:
             month = MONTHS.index(word) + 1
-        elif word.isdigit():
-            day = int(word)
+        elif word[0:2].isdigit() and not word.isdigit(): #if day and not year
+            day = int(word[0:2])
 
     if month < today.month:
         year += 1
-
+    
     return datetime.date(month=month, day=day, year=year)
 
+
+# RETURNS MONTH AND DAY FOR VOICE OUTPUT
+# ex: 
+# input: "08-21"
+# output: "March twenty-first"
 def date_to_string(date): #format ex: 08-21
-    day = DAY_PRONOUNCE[int(date[3:5])-1] #int 
-    int_month = int(date[0:2]) #int
+    day = DAY_PRONOUNCE[int(date[3:5])-1] 
+    int_month = int(date[0:2]) 
     return MONTHS[int_month-1] + " " + day
 
 def date_to_string_year(date): #format ex: 2000-08-21
-    day = DAY_PRONOUNCE[int(date[8:10])-1] #int 
-    int_month = int(date[5:7])-1 #int
+    day = DAY_PRONOUNCE[int(date[8:10])-1] 
+    int_month = int(date[5:7])-1 
     return f"{MONTHS[int_month]} {day} {date[0:4]}"
+
+
+# RETURNS STRING WITH HIGH TEMP, LOW TEMP, FORECAST FOR A SPECIFIC DATE
+# date must be within 7 days of day 
+def get_weather(day_value):
+    myloc = geocoder.ip('me') # get current location based off ip address
+    lat = myloc.lat
+    lon = myloc.lng
+    part = 'hourly, minutely, current'
+    api_key = "b06fe66f5475080e660b6feb372b1629"
+    base_url = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&units=imperial&exclude={part}&appid={api_key}"
+    response = requests.get(base_url)
+    rough_data = response.json()
+    weather_forecast = rough_data["daily"]
+    i = 0
+    result = ""
+
+    for elem in weather_forecast:
+        if (i == day_value):
+            highTemp = elem["temp"]["max"]
+            lowTemp = elem["temp"]["min"]
+            highTemp = int(f"{highTemp}"[0:2])
+            lowTemp = int(f"{lowTemp}"[0:2])
+            weather = elem["weather"]
+            x = weather[0]
+            weather = x["description"]
+            result += f"High temp of: {highTemp} degrees, Low temp of: {lowTemp} degrees, Forecast is: {weather}"
+        i += 1
+
+    return result
 
 
 #----------------------------------------------------------------------------------------------------------------
@@ -246,18 +287,21 @@ for greeting in GREETING_STRS_2:
         output += ' ' + random.choice(GREETING_STRS_2_ANSWERS) + '.'
         break
 
-# RETURN ALL EVENTS (SUMMARY + DATE)
+# RETURN ALL EVENTS (SUMMARY , DATE)
 for phrase in EVENT_STRS_1:
     if phrase in text:
         phraseFound = True
         events = get_events(service)
         output += ' ' + "you have"
-        for event in events:
-            start = event['start'].get('dateTime', event['start'].get('date'))
-            output += ' ' + event['summary'] + ' ' + "on" + ' ' + date_to_string(start[5:10]) + ','
-        break
+        if events is not None:
+            for event in events:
+                start = event['start'].get('dateTime', event['start'].get('date'))
+                output += ' ' + event['summary'] + ' ' + "on" + ' ' + date_to_string(start[5:10]) + ','
+            break
+        else:
+            output += "No upcoming events"
 
-# RETURN DATE TODAY (month, day, year)
+# RETURN DATE TODAY (MONTH, DAY, YEAR)
 for phrase in DATE_STRS_1:
     if phrase in text:
         phraseFound = True
@@ -273,8 +317,8 @@ for phrase in NAME_STRS_1:
         output += ' ' + "My name is Neo."
         break
 
-# RETURN EVENT, GIVEN A DATE
-# must be said in the form ex: 'on august 21'
+# RETURN EVENT FOR A SPECIFIC DATE
+# must be said in the form ex: 'on august 21th'
 for phrase in EVENT_STRS_3:
     if phrase in text:
         phraseFound = True
@@ -286,8 +330,28 @@ for phrase in EVENT_STRS_3:
                 output += ' ' + event['summary'] + ' ' + "on" + ' ' + date_to_string(start[5:10]) + ','
             break
         else:
-            output += " No events on that date."
+            output += " no events on that date."
             break
+
+# RETURNS WEATHER FOR A SPECIFIC DATE
+for phrase in WEATHER_STRS_1:
+    if phrase in text:
+        phraseFound = True
+        today = datetime.datetime.today()
+        today = datetime.datetime.combine(today, datetime.datetime.min.time())
+        dateInstance = get_date(text) 
+        dateInstance = datetime.datetime.combine(dateInstance, datetime.datetime.min.time())
+
+        if not (today + datetime.timedelta(7) >= dateInstance):      
+            output += " the date must be within 7 days of today."
+        else:
+            diff = dateInstance - today
+            result = f"{diff}"
+            result = result[:1]
+            x = int(result)
+            output += get_weather(x)
+        
+        break
 
 
 # SPEAK OUTPUT
@@ -296,15 +360,16 @@ if phraseFound == True:
     speak(output)
 else:
     print("No phrase found.")
+    speak("No phrase found.")
 
 
 # TODO 
-# implement st, nd, rd, th, and 'tomorrow' for date 
+# implement st, nd, rd, th, and 'tomorrow' for date CHECK
 # what day is august 24
-# install weather api for voice assistant 
+# install weather api for voice assistant CHECK
 # install google maps api for voice assistant , nearby places, traffic 
 # install some sort of messaging 
-# 
+# implement "monday" "tuesday", recognition for get_date()
 
 
 
