@@ -365,13 +365,9 @@ else:
     speak("No phrase found.")
 
 
-# TODO 
-# implement st, nd, rd, th, and 'tomorrow' for date CHECK
-# what day is august 24
-# install weather api for voice assistant CHECK
-# install google maps api for voice assistant , nearby places, traffic 
+# TODO
+# install google maps api nearby places, traffic 
 # install some sort of messaging 
-# implement "monday" "tuesday", recognition for get_date()
 
 
 
