@@ -1,4 +1,4 @@
-# Python Voice Assistant
+# Speech Recognition Assistant (Python)
 A voice assistant created with Python 3.
 
 ## Project Overview
