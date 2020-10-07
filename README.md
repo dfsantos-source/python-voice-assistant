@@ -11,7 +11,7 @@ updates.
 * Learned about user authentication and security from implementation of API keys as well as data retrieval from
 a json response.
 
-## Setting Up Virtual Environment (virtualenv)
+## Setting Up Virtual Environment 
 We can setup the virtual environment using venv, and the requirements.txt file.
 ```sh
 $ python3 -m venv voice-env
