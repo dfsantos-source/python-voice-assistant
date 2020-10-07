@@ -11,9 +11,18 @@ updates.
 * Learned about user authentication and security from implementation of API keys as well as data retrieval from
 a json response.
 
+## Setting Up Virtual Environment (virtualenv)
+We can setup the virtual environment using venv, and the requirements.txt file.
+```sh
+$ python3 -m venv voice-env
+$ source voice-env/bin/activate
+$ pip install -r requirements.txt
+$ python main.py
+```
+
 ## API Key Implementation
-Currently using API key from Google Calendar API website.
-In order to use this implementation, you must change the api_file directory, and use another API key accordingly.
+Currently using API keys from Google Calendar API and OpenWeatherMap API.
+In order to use this implementation, you must change the api_file directory, and use another API key inside a text file accordingly.
 
 
 
