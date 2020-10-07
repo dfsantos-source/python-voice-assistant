@@ -1,7 +1,7 @@
 # python-voice-assistant
 A voice assistant created with Python 3.
 
-Project Overview:
+## Project Overview
 Takes in a data set of input, to automate a response, given a speech input.
 A speech recognition application built in Python that converts speech to text and vice-versa for daily-use by building a response from user input.
 
@@ -10,3 +10,12 @@ A speech recognition application built in Python that converts speech to text an
 updates.
 * Learned about user authentication and security from implementation of API keys as well as data retrieval from
 a json response.
+
+## API Key Implementation
+Currently using API key from Google Calendar API website.
+In order to use this implementation, you must change the api_file directory, and use another API key accordingly.
+
+
+
+
+
