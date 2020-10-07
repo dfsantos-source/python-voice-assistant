@@ -1,4 +1,4 @@
-# python-voice-assistant
+# Python Voice Assistant
 A voice assistant created with Python 3.
 
 ## Project Overview
